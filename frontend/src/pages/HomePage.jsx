@@ -1,25 +1,58 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { 
-  Sparkles, 
   Smartphone, 
   Apple, 
   ShieldCheck, 
   Zap, 
-  SlidersHorizontal 
+  SlidersHorizontal,
+  PackageOpen,
+  Plus
 } from 'lucide-react'
 import AppCard from '../components/AppCard'
-import { MOCK_APPS, MOCK_CATEGORIES } from '../data/mockData'
+import { realDataService, DEFAULT_CATEGORIES } from '../api/store'
 import { useTheme } from '../context/ThemeContext'
 import { useSettings } from '../context/SettingsContext'
+import { useAuth } from '../context/AuthContext'
 
 export default function HomePage({ searchQuery }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const platformParam = searchParams.get('platform') || 'ALL'
   const [selectedCategory, setSelectedCategory] = useState('ALL')
   const [sortBy, setSortBy] = useState('POPULAR')
+  const [apps, setApps] = useState([])
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
+  const [loading, setLoading] = useState(true)
+
   const { isDark } = useTheme()
   const { iosEnabled } = useSettings()
+  const { isAdmin } = useAuth()
+
+  // Load real applications from database/service
+  useEffect(() => {
+    let mounted = true
+    async function loadRealData() {
+      setLoading(true)
+      try {
+        const [realApps, realCats] = await Promise.all([
+          realDataService.getApps(),
+          realDataService.getCategories()
+        ])
+        if (mounted) {
+          setApps(realApps || [])
+          if (realCats && realCats.length > 0) {
+            setCategories(realCats)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load apps from database:', err)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    loadRealData()
+    return () => { mounted = false }
+  }, [])
 
   // Reset platform filter if iOS is disabled and current filter is IOS
   const platformFilter = !iosEnabled && platformParam === 'IOS' ? 'ALL' : platformParam
@@ -40,9 +73,9 @@ export default function HomePage({ searchQuery }) {
     setSearchParams(searchParams)
   }
 
-  // Filter & sort apps
+  // Filter & sort apps from real database
   const filteredApps = useMemo(() => {
-    return MOCK_APPS.filter((app) => {
+    return apps.filter((app) => {
       // If iOS features are globally disabled by Admin, hide ALL iOS apps
       if (!iosEnabled && app.platform === 'IOS') {
         return false
@@ -58,18 +91,18 @@ export default function HomePage({ searchQuery }) {
       // Search query
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
-        const matchesName = app.name.toLowerCase().includes(q)
+        const matchesName = app.name?.toLowerCase().includes(q)
         const matchesDesc = app.description?.toLowerCase().includes(q)
         const matchesPkg = app.packageName?.toLowerCase().includes(q)
         if (!matchesName && !matchesDesc && !matchesPkg) return false
       }
       return true
     }).sort((a, b) => {
-      if (sortBy === 'POPULAR') return b.downloadCount - a.downloadCount
-      if (sortBy === 'RATING') return b.rating - a.rating
-      return a.name.localeCompare(b.name)
+      if (sortBy === 'POPULAR') return (b.downloadCount || 0) - (a.downloadCount || 0)
+      if (sortBy === 'RATING') return (b.rating || 0) - (a.rating || 0)
+      return (a.name || '').localeCompare(b.name || '')
     })
-  }, [iosEnabled, platformFilter, selectedCategory, searchQuery, sortBy])
+  }, [apps, iosEnabled, platformFilter, selectedCategory, searchQuery, sortBy])
 
   return (
     <div className="space-y-7 pb-16">
@@ -208,9 +241,9 @@ export default function HomePage({ searchQuery }) {
           >
             All Categories
           </button>
-          {MOCK_CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
-              key={cat.id}
+              key={cat.id || cat.slug}
               onClick={() => setSelectedCategory(cat.slug)}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all duration-200 hover:scale-105 active:scale-95 ${
                 selectedCategory === cat.slug
@@ -220,7 +253,7 @@ export default function HomePage({ searchQuery }) {
                   : 'bg-white/80 border-slate-300 text-slate-600 hover:text-slate-900 shadow-sm'
               }`}
             >
-              <span>{cat.icon}</span>
+              <span>{cat.icon || '📦'}</span>
               <span>{cat.name}</span>
             </button>
           ))}
@@ -241,16 +274,34 @@ export default function HomePage({ searchQuery }) {
           </h2>
         </div>
 
-        {filteredApps.length === 0 ? (
-          <div className={`p-12 text-center rounded-2xl border ${
+        {loading ? (
+          <div className="py-16 text-center">
+            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs text-gray-400 font-mono">Loading applications from database...</p>
+          </div>
+        ) : filteredApps.length === 0 ? (
+          <div className={`p-12 text-center rounded-3xl border ${
             isDark ? 'bg-slate-900/40 border-slate-800 text-gray-400' : 'bg-white/80 border-slate-300 text-slate-500'
           }`}>
-            <p className="text-sm">No applications found matching your criteria.</p>
+            <PackageOpen className="w-12 h-12 mx-auto mb-3 opacity-40 text-indigo-400" />
+            <h3 className="text-base font-bold text-gray-200 mb-1">No Applications Published Yet</h3>
+            <p className="text-xs max-w-md mx-auto mb-4 opacity-75">
+              The platform is connected to your database. Real applications published by the Super Administrator will appear here.
+            </p>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white gradient-btn shadow"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Publish First Application</span>
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredApps.map((app) => (
-              <AppCard key={app.id} app={app} />
+              <AppCard key={app.id || app.slug} app={app} />
             ))}
           </div>
         )}

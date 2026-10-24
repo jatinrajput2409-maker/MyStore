@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { 
   Shield, 
@@ -13,9 +13,10 @@ import {
   Trash2, 
   FileCheck,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react'
-import { MOCK_APPS, MOCK_CATEGORIES } from '../data/mockData'
+import { realDataService, DEFAULT_CATEGORIES } from '../api/store'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useSettings } from '../context/SettingsContext'
@@ -24,8 +25,9 @@ export default function AdminDashboard() {
   const { user } = useAuth()
   const { isDark } = useTheme()
   const { iosEnabled, setIosEnabled } = useSettings()
-  const [apps, setApps] = useState(MOCK_APPS)
-  const [categories, setCategories] = useState(MOCK_CATEGORIES)
+  const [apps, setApps] = useState([])
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
+  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('APPS') // APPS | UPLOAD | SETTINGS
 
   // Modal states
@@ -45,7 +47,7 @@ export default function AdminDashboard() {
   const [isUploading, setIsUploading] = useState(false)
   const [uploadSuccess, setUploadSuccess] = useState(false)
   const [versionForm, setVersionForm] = useState({
-    appId: apps[0]?.id || '',
+    appId: '',
     versionNumber: '1.0.0',
     versionCode: 100,
     releaseChannel: 'STABLE',
@@ -53,13 +55,34 @@ export default function AdminDashboard() {
     file: null,
   })
 
+  // Load real data from backend/storage on mount
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true)
+      try {
+        const [loadedApps, loadedCats] = await Promise.all([
+          realDataService.getApps(),
+          realDataService.getCategories(),
+        ])
+        setApps(loadedApps || [])
+        setCategories(loadedCats || DEFAULT_CATEGORIES)
+        if (loadedApps && loadedApps.length > 0) {
+          setVersionForm((prev) => ({ ...prev, appId: loadedApps[0].id }))
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
   // Quick stats calculation
   const totalDownloads = apps.reduce((sum, a) => sum + (a.downloadCount || 0), 0)
   const totalApps = apps.length
   const totalAndroid = apps.filter(a => a.platform === 'ANDROID').length
   const totalIos = apps.filter(a => a.platform === 'IOS').length
 
-  const handleCreateApp = (e) => {
+  const handleCreateApp = async (e) => {
     e.preventDefault()
     const slug = newAppForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
     const created = {
@@ -90,7 +113,8 @@ export default function AdminDashboard() {
       versionHistory: [],
     }
 
-    setApps([created, ...apps])
+    const saved = await realDataService.createApp(created)
+    setApps([saved, ...apps])
     setIsAddAppModalOpen(false)
     setNewAppForm({
       name: '',
@@ -145,8 +169,9 @@ export default function AdminDashboard() {
     }, 250)
   }
 
-  const handleDeleteApp = (id) => {
+  const handleDeleteApp = async (id) => {
     if (window.confirm('Are you sure you want to delete this application?')) {
+      await realDataService.deleteApp(id)
       setApps(apps.filter((a) => a.id !== id))
     }
   }
@@ -314,7 +339,24 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className={`divide-y ${isDark ? 'divide-slate-800/60' : 'divide-slate-200'}`}>
-                {apps.map((app) => {
+                {apps.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-12">
+                      <div className="flex flex-col items-center justify-center">
+                        <Smartphone className="w-10 h-10 opacity-30 mb-2" />
+                        <p className="font-semibold text-sm opacity-80">No Applications In Database</p>
+                        <p className="text-xs opacity-50 mt-1 mb-4">Click "New App Listing" to add your first real application.</p>
+                        <button
+                          onClick={() => setIsAddAppModalOpen(true)}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white gradient-btn shadow"
+                        >
+                          Add First App
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  apps.map((app) => {
                   const isHiddenIos = !iosEnabled && app.platform === 'IOS'
 
                   return (
@@ -400,7 +442,8 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   )
-                })}
+                })
+              )}
               </tbody>
             </table>
           </div>
@@ -432,6 +475,9 @@ export default function AdminDashboard() {
                   isDark ? 'bg-slate-950 border-slate-800 text-gray-200' : 'bg-slate-50 border-slate-300 text-slate-800'
                 }`}
               >
+                {apps.length === 0 && (
+                  <option value="">No applications published yet</option>
+                )}
                 {apps.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name} ({a.platform}) - Current v{a.latestVersion?.versionNumber}
