@@ -1,0 +1,16 @@
+logging:
+  level:
+    root: WARN
+    com.example.appplatform: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+
+server:
+  ssl:
+    enabled: false  # Terminated at load balancer / reverse proxy in production
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

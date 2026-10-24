@@ -1,0 +1,25 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://jatinrajput2409:Jatin%406266@cluster0.prz1h5o.mongodb.net/appplatform?retryWrites=true&w=majority&appName=Cluster0
+
+logging:
+  level:
+    com.example.appplatform: INFO
+    org.springframework.data.mongodb: INFO
+    org.springframework.security: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+
+app:
+  admin:
+    setup-secret: dev-setup-secret-change-in-prod
+  jwt:
+    secret: dev-jwt-secret-must-be-at-least-32-chars-long-for-hs256-algorithm
+  storage:
+    bucket: appplatform-dev
+    access-key: dev-access-key-mock
+    secret-key: dev-secret-key-mock
+    region: ap-south-1
+  cors:
+    allowed-origins: http://localhost:5173
