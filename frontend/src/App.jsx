@@ -58,7 +58,7 @@ export default function App() {
     <ThemeProvider>
       <SettingsProvider>
         <AuthProvider>
-          <BrowserRouter>
+          <BrowserRouter basename={import.meta.env.BASE_URL}>
             <MainLayout />
           </BrowserRouter>
         </AuthProvider>
