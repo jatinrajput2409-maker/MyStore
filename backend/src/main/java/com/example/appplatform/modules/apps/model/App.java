@@ -49,6 +49,9 @@ public class App {
     /** iOS bundle identifier. Null for Android. */
     private String bundleId;
 
+    /** Web application launch / direct URL for WEB platform */
+    private String webUrl;
+
     private AppStatus status = AppStatus.DRAFT;
 
     private AppVisibility visibility = AppVisibility.PUBLIC;

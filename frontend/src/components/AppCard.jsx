@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Download, Star, Smartphone, Apple, ArrowRight, Check } from 'lucide-react'
+import { Download, Star, Smartphone, Apple, Globe, ExternalLink, ArrowRight, Check } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 
 export default function AppCard({ app }) {
   const { isDark } = useTheme()
   const isAndroid = app.platform === 'ANDROID'
+  const isIos = app.platform === 'IOS'
+  const isWeb = app.platform === 'WEB'
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
 
@@ -64,10 +66,14 @@ export default function AppCard({ app }) {
             <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
               isAndroid 
                 ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30' 
-                : 'bg-sky-500/15 text-sky-500 border border-sky-500/30'
+                : isIos
+                ? 'bg-sky-500/15 text-sky-500 border border-sky-500/30'
+                : 'bg-purple-500/15 text-purple-400 border border-purple-500/30'
             }`}>
-              {isAndroid ? <Smartphone className="w-3 h-3" /> : <Apple className="w-3 h-3" />}
-              {isAndroid ? 'APK' : 'iOS'}
+              {isAndroid && <Smartphone className="w-3 h-3" />}
+              {isIos && <Apple className="w-3 h-3" />}
+              {isWeb && <Globe className="w-3 h-3" />}
+              {isAndroid ? 'APK' : isIos ? 'iOS' : 'Web'}
             </span>
 
             {/* Version */}
@@ -124,33 +130,50 @@ export default function AppCard({ app }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Quick Direct Download Button with animated state */}
-          <button
-            onClick={handleQuickDownload}
-            disabled={downloading}
-            title={`Download ${isAndroid ? 'APK' : 'Package'}`}
-            className={`p-2 rounded-xl border text-xs font-medium transition-all flex items-center gap-1 ${
-              downloaded
-                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-500'
-                : isDark
-                ? 'bg-slate-800/80 hover:bg-slate-700 text-gray-200 border-slate-700'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
-            }`}
-          >
-            {downloading ? (
-              <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-            ) : downloaded ? (
-              <Check className="w-3.5 h-3.5 text-emerald-500" />
-            ) : (
-              <Download className="w-3.5 h-3.5" />
-            )}
-          </button>
+          {/* Quick Direct Action Button */}
+          {isWeb && app.webUrl ? (
+            <a
+              href={app.webUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              title="Open Web Software in new tab"
+              className={`p-2 rounded-xl border text-xs font-medium transition-all flex items-center gap-1 ${
+                isDark
+                  ? 'bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border-purple-800/60'
+                  : 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-300'
+              }`}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          ) : (
+            <button
+              onClick={handleQuickDownload}
+              disabled={downloading}
+              title={`Download ${isAndroid ? 'APK' : 'Package'}`}
+              className={`p-2 rounded-xl border text-xs font-medium transition-all flex items-center gap-1 ${
+                downloaded
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-500'
+                  : isDark
+                  ? 'bg-slate-800/80 hover:bg-slate-700 text-gray-200 border-slate-700'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              }`}
+            >
+              {downloading ? (
+                <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+              ) : downloaded ? (
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
 
           <Link
             to={`/apps/${app.slug}`}
             className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold text-white gradient-btn shadow"
           >
-            <span>Get</span>
+            <span>{isWeb ? 'Open' : 'Get'}</span>
             <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>

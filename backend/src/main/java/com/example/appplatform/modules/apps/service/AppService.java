@@ -138,6 +138,7 @@ public class AppService {
         app.setCategoryId(request.getCategoryId());
         app.setPackageName(request.getPackageName());
         app.setBundleId(request.getBundleId());
+        app.setWebUrl(request.getWebUrl());
         app.setVisibility(request.getVisibility());
         app.setStatus(AppStatus.DRAFT);
         app.setCreatedBy(createdByUserId);
@@ -154,6 +155,7 @@ public class AppService {
         app.setDescription(request.getDescription());
         app.setShortDescription(request.getShortDescription());
         app.setCategoryId(request.getCategoryId());
+        app.setWebUrl(request.getWebUrl());
         app.setVisibility(request.getVisibility());
 
         return appMapper.toDto(appRepository.save(app), null);

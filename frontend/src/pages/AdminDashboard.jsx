@@ -6,6 +6,8 @@ import {
   UploadCloud, 
   Smartphone, 
   Apple, 
+  Globe,
+  ExternalLink,
   HardDrive, 
   Download, 
   Check, 
@@ -24,7 +26,7 @@ import { useSettings } from '../context/SettingsContext'
 export default function AdminDashboard() {
   const { user } = useAuth()
   const { isDark } = useTheme()
-  const { iosEnabled, setIosEnabled } = useSettings()
+  const { iosEnabled, setIosEnabled, webEnabled, setWebEnabled } = useSettings()
   const [apps, setApps] = useState([])
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
   const [loading, setLoading] = useState(true)
@@ -39,6 +41,7 @@ export default function AdminDashboard() {
     category: 'Productivity',
     shortDescription: '',
     description: '',
+    webUrl: '',
     iconUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=160&auto=format&fit=crop&q=80',
   })
 
@@ -81,6 +84,7 @@ export default function AdminDashboard() {
   const totalApps = apps.length
   const totalAndroid = apps.filter(a => a.platform === 'ANDROID').length
   const totalIos = apps.filter(a => a.platform === 'IOS').length
+  const totalWeb = apps.filter(a => a.platform === 'WEB').length
 
   const handleCreateApp = async (e) => {
     e.preventDefault()
@@ -89,8 +93,9 @@ export default function AdminDashboard() {
       id: `app-${Date.now()}`,
       name: newAppForm.name,
       slug,
-      packageName: newAppForm.packageName,
+      packageName: newAppForm.packageName || (newAppForm.platform === 'WEB' ? `web.${slug}` : ''),
       platform: newAppForm.platform,
+      webUrl: newAppForm.webUrl || '',
       iconUrl: newAppForm.iconUrl,
       shortDescription: newAppForm.shortDescription,
       description: newAppForm.description,
@@ -103,9 +108,9 @@ export default function AdminDashboard() {
       latestVersion: {
         versionNumber: '1.0.0',
         versionCode: 100,
-        formattedSize: '15.4 MB',
+        formattedSize: newAppForm.platform === 'WEB' ? 'Web Application' : '15.4 MB',
         releaseChannel: 'STABLE',
-        minOsVersion: newAppForm.platform === 'ANDROID' ? 'Android 8.0+' : 'iOS 15.0+',
+        minOsVersion: newAppForm.platform === 'ANDROID' ? 'Android 8.0+' : newAppForm.platform === 'IOS' ? 'iOS 15.0+' : 'Modern Web Browser',
         releaseNotes: 'Initial production release.',
         checksumSha256: '9f8e7d6c5b4a3928170192837465abcdeffedcba1234567890abcdef12345678',
       },
@@ -123,6 +128,7 @@ export default function AdminDashboard() {
       category: 'Productivity',
       shortDescription: '',
       description: '',
+      webUrl: '',
       iconUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=160&auto=format&fit=crop&q=80',
     })
   }
@@ -200,49 +206,99 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {/* Global iOS Platform Toggle Switch */}
-      <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all ${
-        isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-300 shadow-sm'
-      }`}>
-        <div className="flex items-start sm:items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-            iosEnabled ? 'bg-sky-500/15 text-sky-500' : 'bg-slate-500/15 text-slate-400'
-          }`}>
-            <Apple className="w-5 h-5" />
-          </div>
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-xs sm:text-sm">iOS Features &amp; Applications Distribution</h3>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                iosEnabled 
-                  ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30' 
-                  : 'bg-red-500/15 text-red-500 border border-red-500/30'
-              }`}>
-                {iosEnabled ? 'ENABLED ON WEBSITE' : 'COMPLETELY DISABLED'}
-              </span>
+      {/* Global Platform Toggles Grid (iOS & Web Software) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* Global iOS Platform Toggle Switch */}
+        <div className={`p-4 sm:p-5 rounded-2xl border flex items-center justify-between gap-4 transition-all ${
+          isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-300 shadow-sm'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+              iosEnabled ? 'bg-sky-500/15 text-sky-500' : 'bg-slate-500/15 text-slate-400'
+            }`}>
+              <Apple className="w-5 h-5" />
             </div>
-            <p className="text-[11px] opacity-75 max-w-xl">
-              {iosEnabled 
-                ? 'iOS applications, OTA manifest profile installs, and iOS platform navigation tabs are visible to website visitors.' 
-                : 'All iOS applications and iOS filter buttons are completely hidden from the public website. Only Android apps are shown.'}
-            </p>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-bold text-xs sm:text-sm">iOS Apps (OTA)</h3>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  iosEnabled 
+                    ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30' 
+                    : 'bg-red-500/15 text-red-500 border border-red-500/30'
+                }`}>
+                  {iosEnabled ? 'LIVE' : 'DISABLED'}
+                </span>
+              </div>
+              <p className="text-[11px] opacity-75">
+                {iosEnabled 
+                  ? 'iOS apps & manifest installs visible to visitors.' 
+                  : 'All iOS apps hidden from public website.'}
+              </p>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIosEnabled(!iosEnabled)}
+            className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              iosEnabled ? 'bg-sky-500' : 'bg-slate-400'
+            }`}
+            title={iosEnabled ? 'Click to disable all iOS features' : 'Click to enable all iOS features'}
+          >
+            <span
+              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                iosEnabled ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIosEnabled(!iosEnabled)}
-          className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            iosEnabled ? 'bg-sky-500' : 'bg-slate-400'
-          }`}
-          title={iosEnabled ? 'Click to disable all iOS features' : 'Click to enable all iOS features'}
-        >
-          <span
-            className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-              iosEnabled ? 'translate-x-5' : 'translate-x-0'
+        {/* Global Web Software Toggle Switch */}
+        <div className={`p-4 sm:p-5 rounded-2xl border flex items-center justify-between gap-4 transition-all ${
+          isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-300 shadow-sm'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+              webEnabled ? 'bg-purple-500/15 text-purple-400' : 'bg-slate-500/15 text-slate-400'
+            }`}>
+              <Globe className="w-5 h-5" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-bold text-xs sm:text-sm">Web Software &amp; SaaS</h3>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  webEnabled 
+                    ? 'bg-purple-500/15 text-purple-400 border border-purple-500/30' 
+                    : 'bg-red-500/15 text-red-500 border border-red-500/30'
+                }`}>
+                  {webEnabled ? 'LIVE' : 'DISABLED'}
+                </span>
+              </div>
+              <p className="text-[11px] opacity-75">
+                {webEnabled 
+                  ? 'Web software, SaaS launch links visible to visitors.' 
+                  : 'All Web software hidden from public website.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setWebEnabled(!webEnabled)}
+            className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              webEnabled ? 'bg-purple-600' : 'bg-slate-400'
             }`}
-          />
-        </button>
+            title={webEnabled ? 'Click to disable all Web software' : 'Click to enable all Web software'}
+          >
+            <span
+              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                webEnabled ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
       </div>
 
       {/* Metric Cards Row */}
@@ -250,13 +306,17 @@ export default function AdminDashboard() {
         <div className={`border rounded-2xl p-4 ${
           isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-300 shadow-sm'
         }`}>
-          <p className="text-xs opacity-60 font-medium">Total Apps</p>
+          <p className="text-xs opacity-60 font-medium">Total Apps &amp; Software</p>
           <p className="text-xl sm:text-2xl font-extrabold mt-1">{totalApps}</p>
-          <div className="flex items-center gap-2 mt-2 text-[11px] opacity-70">
+          <div className="flex items-center gap-2 mt-2 text-[11px] opacity-70 flex-wrap">
             <span>{totalAndroid} Android</span>
             <span>•</span>
             <span className={iosEnabled ? '' : 'line-through text-red-400'}>
               {totalIos} iOS {!iosEnabled && '(Hidden)'}
+            </span>
+            <span>•</span>
+            <span className={webEnabled ? '' : 'line-through text-red-400'}>
+              {totalWeb} Web {!webEnabled && '(Hidden)'}
             </span>
           </div>
         </div>
@@ -358,6 +418,7 @@ export default function AdminDashboard() {
                 ) : (
                   apps.map((app) => {
                   const isHiddenIos = !iosEnabled && app.platform === 'IOS'
+                  const isHiddenWeb = !webEnabled && app.platform === 'WEB'
 
                   return (
                     <tr key={app.id} className={isDark ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50'}>
@@ -371,7 +432,9 @@ export default function AdminDashboard() {
                           <Link to={`/apps/${app.slug}`} className="font-bold hover:text-blue-500 transition-colors">
                             {app.name}
                           </Link>
-                          <p className="text-[10px] opacity-60 font-mono">{app.packageName}</p>
+                          <p className="text-[10px] opacity-60 font-mono truncate max-w-[200px]">
+                            {app.platform === 'WEB' && app.webUrl ? app.webUrl : app.packageName}
+                          </p>
                         </div>
                       </td>
 
@@ -379,15 +442,19 @@ export default function AdminDashboard() {
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
                           app.platform === 'ANDROID'
                             ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            : 'bg-sky-500/10 text-sky-500 border border-sky-500/20'
+                            : app.platform === 'IOS'
+                            ? 'bg-sky-500/10 text-sky-500 border border-sky-500/20'
+                            : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
                         }`}>
-                          {app.platform === 'ANDROID' ? <Smartphone className="w-3 h-3" /> : <Apple className="w-3 h-3" />}
+                          {app.platform === 'ANDROID' && <Smartphone className="w-3 h-3" />}
+                          {app.platform === 'IOS' && <Apple className="w-3 h-3" />}
+                          {app.platform === 'WEB' && <Globe className="w-3 h-3" />}
                           {app.platform}
                         </span>
                       </td>
 
                       <td className="px-5 py-3 font-mono text-xs">
-                        v{app.latestVersion?.versionNumber}
+                        {app.platform === 'WEB' ? 'Web SaaS' : `v${app.latestVersion?.versionNumber}`}
                       </td>
 
                       <td className="px-5 py-3 opacity-80">
@@ -403,6 +470,10 @@ export default function AdminDashboard() {
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/15 text-red-500 border border-red-500/30">
                             Hidden (iOS Disabled)
                           </span>
+                        ) : isHiddenWeb ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/15 text-red-500 border border-red-500/30">
+                            Hidden (Web Disabled)
+                          </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-500">
                             Public
@@ -412,6 +483,17 @@ export default function AdminDashboard() {
 
                       <td className="px-5 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {app.platform === 'WEB' && app.webUrl && (
+                            <a
+                              href={app.webUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 border border-purple-500/30"
+                              title="Test Launch Web Software"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          )}
                           <Link
                             to={`/apps/${app.slug}`}
                             className={`p-1.5 rounded-lg border ${
@@ -647,6 +729,7 @@ export default function AdminDashboard() {
                   >
                     <option value="ANDROID">ANDROID (APK)</option>
                     <option value="IOS">IOS (Enterprise OTA)</option>
+                    <option value="WEB">WEB (Software / SaaS)</option>
                   </select>
                 </div>
 
@@ -668,10 +751,34 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              {newAppForm.platform === 'WEB' && (
+                <div>
+                  <label className="font-semibold opacity-80">Web Software URL / Launch Link *</label>
+                  <input
+                    type="url"
+                    required={newAppForm.platform === 'WEB'}
+                    placeholder="https://example.com or https://app.domain.com"
+                    value={newAppForm.webUrl}
+                    onChange={(e) => setNewAppForm({ ...newAppForm, webUrl: e.target.value })}
+                    className={`w-full p-2.5 rounded-xl border mt-1 font-mono ${
+                      isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-300'
+                    }`}
+                  />
+                  <p className="text-[10px] opacity-60 mt-0.5">Visitors will be directed to this URL when clicking Launch.</p>
+                </div>
+              )}
+
               {!iosEnabled && newAppForm.platform === 'IOS' && (
                 <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-500 text-[11px] flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   <span>Notice: iOS features are currently disabled in platform settings. This app will remain hidden until iOS is re-enabled.</span>
+                </div>
+              )}
+
+              {!webEnabled && newAppForm.platform === 'WEB' && (
+                <div className="p-2.5 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 text-[11px] flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span>Notice: Web software features are currently disabled in platform settings. This listing will remain hidden until Web is re-enabled.</span>
                 </div>
               )}
 

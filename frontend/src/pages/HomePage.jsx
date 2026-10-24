@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { 
   Smartphone, 
   Apple, 
+  Globe,
   ShieldCheck, 
   Zap, 
   SlidersHorizontal,
@@ -25,7 +26,7 @@ export default function HomePage({ searchQuery }) {
   const [loading, setLoading] = useState(true)
 
   const { isDark } = useTheme()
-  const { iosEnabled } = useSettings()
+  const { iosEnabled, webEnabled } = useSettings()
   const { isAdmin } = useAuth()
 
   // Load real applications from database/service
@@ -54,15 +55,22 @@ export default function HomePage({ searchQuery }) {
     return () => { mounted = false }
   }, [])
 
-  // Reset platform filter if iOS is disabled and current filter is IOS
-  const platformFilter = !iosEnabled && platformParam === 'IOS' ? 'ALL' : platformParam
+  // Reset platform filter if iOS or Web is disabled and currently selected
+  const platformFilter = 
+    (!iosEnabled && platformParam === 'IOS') || (!webEnabled && platformParam === 'WEB')
+      ? 'ALL' 
+      : platformParam
 
   useEffect(() => {
     if (!iosEnabled && platformParam === 'IOS') {
       searchParams.delete('platform')
       setSearchParams(searchParams)
     }
-  }, [iosEnabled, platformParam, searchParams, setSearchParams])
+    if (!webEnabled && platformParam === 'WEB') {
+      searchParams.delete('platform')
+      setSearchParams(searchParams)
+    }
+  }, [iosEnabled, webEnabled, platformParam, searchParams, setSearchParams])
 
   const handlePlatformChange = (val) => {
     if (val === 'ALL') {
@@ -78,6 +86,10 @@ export default function HomePage({ searchQuery }) {
     return apps.filter((app) => {
       // If iOS features are globally disabled by Admin, hide ALL iOS apps
       if (!iosEnabled && app.platform === 'IOS') {
+        return false
+      }
+      // If Web Software features are globally disabled by Admin, hide ALL Web apps
+      if (!webEnabled && app.platform === 'WEB') {
         return false
       }
       // Platform filter
@@ -202,6 +214,19 @@ export default function HomePage({ searchQuery }) {
               >
                 <Apple className="w-3.5 h-3.5" />
                 iOS OTA
+              </button>
+            )}
+            {webEnabled && (
+              <button
+                onClick={() => handlePlatformChange('WEB')}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition-all duration-200 ${
+                  platformFilter === 'WEB'
+                    ? 'bg-purple-600 text-white shadow'
+                    : isDark ? 'text-gray-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                Web Software
               </button>
             )}
           </div>

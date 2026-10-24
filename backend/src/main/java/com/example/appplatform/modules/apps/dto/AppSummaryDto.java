@@ -20,6 +20,7 @@ public class AppSummaryDto {
     private Platform platform;
     private String categoryId;
     private String categoryName;
+    private String webUrl;
     private AppStatus status;
     private AppVisibility visibility;
     private String iconUrl;

@@ -30,5 +30,7 @@ public class CreateAppRequest {
 
     private String bundleId;
 
+    private String webUrl;
+
     private AppVisibility visibility = AppVisibility.PUBLIC;
 }

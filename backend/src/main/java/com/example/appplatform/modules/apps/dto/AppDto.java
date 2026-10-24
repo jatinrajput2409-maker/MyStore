@@ -24,6 +24,7 @@ public class AppDto {
     private CategoryDto category;
     private String packageName;
     private String bundleId;
+    private String webUrl;
     private AppStatus status;
     private AppVisibility visibility;
     private String iconUrl;

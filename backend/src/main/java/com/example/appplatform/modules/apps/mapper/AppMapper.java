@@ -25,6 +25,7 @@ public class AppMapper {
         dto.setShortDescription(app.getShortDescription());
         dto.setPlatform(app.getPlatform());
         dto.setCategoryId(app.getCategoryId());
+        dto.setWebUrl(app.getWebUrl());
         dto.setStatus(app.getStatus());
         dto.setVisibility(app.getVisibility());
         // iconUrl would be resolved via StorageService — omitted here for brevity
@@ -44,6 +45,7 @@ public class AppMapper {
         dto.setCategoryId(app.getCategoryId());
         dto.setPackageName(app.getPackageName());
         dto.setBundleId(app.getBundleId());
+        dto.setWebUrl(app.getWebUrl());
         dto.setStatus(app.getStatus());
         dto.setVisibility(app.getVisibility());
         dto.setCurrentVersionId(app.getCurrentVersionId());
